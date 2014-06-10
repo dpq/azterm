@@ -6,8 +6,6 @@ from time import sleep, time
 from datetime import datetime
 from simplejson import loads
 
-LS_LOCATION="/home/pi/localstorage.bin"
-
 def send_network(server, string):
   if string is None or len(string)==0:
     return True
@@ -51,7 +49,7 @@ def touch(fname, times=None):
 
 def saveToFile(string):
   try:
-    f=open(LS_LOCATION, "a+b")
+    f=open(p.storage, "a+b")
     f.write(string)
     f.close()
   except:
@@ -60,7 +58,7 @@ def saveToFile(string):
 
 def loadFromFile():
   try:
-    with open(LS_LOCATION, "rb") as f:
+    with open(p.storage, "rb") as f:
       return f.read()
   except:
     print datetime.utcnow(), "Cannot open local storage file for reading"
@@ -68,7 +66,7 @@ def loadFromFile():
 
 def truncFile():
   try:
-    open(LS_LOCATION, 'w').close()
+    open(p.storage, 'w').close()
     return True
   except:
     print datetime.utcnow(), "Cannot open local storage file for truncating"
