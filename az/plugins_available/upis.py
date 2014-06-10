@@ -1,7 +1,5 @@
 #!/usr/bin/python
-import threading, serial
-import terminal_pb2
-import time
+import threading, time, serial
 
 names = [ "RPi Voltage", "EPR Voltage", "USB Voltage", "BAT Voltage", "UPiS Current", "Analog Sensor Temperature", "Powering Source" ]
 

@@ -1,8 +1,5 @@
 #!/usr/bin/python
-import threading
-import terminal_pb2
-import time
-import cPickle
+import threading, time, cPickle
 names = ["O3 & Cl2 [ppm] MQ131"]
 
 def dev_init():

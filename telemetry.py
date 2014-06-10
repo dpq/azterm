@@ -1,17 +1,10 @@
 #!/usr/bin/python
-from az.proto import terminal_pb2
-from urllib2 import urlopen, URLError
-from simplejson import loads
-import os, traceback, hashlib, socket, struct
-from time import sleep
-import time
+import az.proto.terminal_pb2 as proto
+import az.plugins_available as plugs
+import os, traceback, hashlib, socket, struct, ssl, pkgutil
+from time import sleep, time
 from datetime import datetime
-
-try:
-    import ssl
-except ImportError:
-    print "SSL not found!"
-    exit()
+from simplejson import loads
 
 LS_LOCATION="/home/pi/localstorage.bin"
 
@@ -49,7 +42,6 @@ def send_network(server, string):
     print traceback.format_exc()
     return False
 
-
 def touch(fname, times=None):
   fhandle=file(fname, 'a')
   try:
@@ -83,28 +75,27 @@ def truncFile():
     print traceback.format_exc()
     return False
 
-def getParams():
-  str=open("/etc/azazel.json").read()
-  conf=loads(str)
-  return conf["servers"], int(conf["retryMultiplier"]), int(conf["retryAttempts"]), int(conf["port"]), conf["unitID"], int(conf["batch"]), int(conf["interval"])
 
-import sys,imp
+class Params(dict):
+    def __init__(self, configfile, *args):
+        dict.__init__(self, loads(open(configfile).read()), *args)
 
-def plugin(device): #os.path.dirname(__file__)
-    globals()["plugins-enabled.%s"%device]=imp.load_source(device,
-      os.path.join("/usr/lib/python2.7/dist-packages", "plugins-enabled", "%s.py"%device))
-    module=globals()["plugins-enabled.%s"%device]
-    return module
+    def __getitem__(self, key):
+        return dict.__getitem__(self, key)
+
+    def __setitem__(self, key, val):
+        dict.__setitem__(self, key, val)
+
+    def __getattr__(self, name):
+        return dict.__getitem__(self, name)
 
 if __name__=="__main__":
-  servers, retryMultiplier, retryAttempts, port, token, batchSize, intervalSize=getParams()
-
-  plugins=os.listdir('/home/pi/plugins-enabled')
+  p = Params("/etc/azazel.json")
+  prefix = plugs.__name__ + "."
   pf=[]
-  for pi in plugins:
-    if pi != "__init__.py" and pi.endswith(".py"):
-      x=plugin(pi.replace(".py", ""))
-      pf.append((x, x.dev_data()))
+  for importer, modname, ispkg in pkgutil.iter_modules(plugs.__path__, prefix):
+    module = __import__(modname, fromlist="dummy")
+    pf.append((module, module.dev_data()))
 
   for m in pf:
     m[0].dev_init()
@@ -115,12 +106,12 @@ if __name__=="__main__":
   isBatchMode=True  # as opposed to isIntervalMode
   truncateOK=True
 
-  k=terminal_pb2.DataPack()
+  k=proto.DataPack()
   while True:
     dp=k.point.add()
-    dp.unitid=token
-    dp.timestamp=int(time.time())
-    dp.type=terminal_pb2.DataPoint.STATION
+    dp.unitid=p.unitID
+    dp.timestamp=int(time())
+    dp.type=proto.DataPoint.STATION
 
     for m in pf:
       m[0].dev_pack(dp,m[1].next())
@@ -130,8 +121,8 @@ if __name__=="__main__":
     else:
       pending_interval+=1
 
-    if pending_batch==batchSize:
-      srv=servers[currentServer]
+    if pending_batch==p.batchSize:
+      srv=p.servers[currentServer]
       ks=k.SerializeToString()
 
       batchUploadOK=send_network(srv, ks)
@@ -145,20 +136,20 @@ if __name__=="__main__":
 
       if not batchUploadOK:
         currentAttempt+=1
-        if currentAttempt==retryAttempts:
+        if currentAttempt==p.retryAttempts:
           currentServer+=1
-          currentServer%=len(servers)
+          currentServer%=len(p.servers)
           currentAttempt, currentMultiplier=0, 1
         print 'Error connecting to %s. Sleeping for %d seconds' % (srv, currentMultiplier)
         sleep(currentMultiplier)
-        currentMultiplier*=retryMultiplier
+        currentMultiplier*=p.retryMultiplier
       else:
         currentAttempt, currentMultiplier=0, 1
-      k=terminal_pb2.DataPack()
+      k=proto.DataPack()
       pending_batch=0
       isBatchMode=False
     
-    if pending_interval==intervalSize:
+    if pending_interval==p.intervalSize:
       pending_interval=0
       isBatchMode=True
 

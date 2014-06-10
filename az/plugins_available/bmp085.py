@@ -1,8 +1,5 @@
 #!/usr/bin/python
-import threading
-import terminal_pb2
-import time
-import cPickle
+import threading, time, cPickle
 names = ["Temperature [C*] BMP085", "Pressure [Pa] BMP085"]
 
 def dev_init():

@@ -1,8 +1,5 @@
 #!/usr/bin/python
-import threading
-import terminal_pb2
-import serial,time
-import cPickle
+import threading, time, cPickle, serial
 
 class ArduinoPoller(threading.Thread):
   def __init__(self):

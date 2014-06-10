@@ -1,8 +1,5 @@
 #!/usr/bin/python
-import threading
-import terminal_pb2
-import time
-import cPickle
+import threading, time, cPickle
 names = ["UV index UVM-30A"]
 
 def dev_init():

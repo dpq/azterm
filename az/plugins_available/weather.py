@@ -1,8 +1,5 @@
 #!/usr/bin/python
-import threading
-import terminal_pb2
-import time
-import cPickle
+import threading, time, cPickle
 names = ["Temperature [C*] MPL3115A2", "Pressure [Pa] MPL3115A2", "Humidity [%] HTU21D(F)",
   "Ambient light [lux] ALS-PT19-315C/L177/TR8", "Precipitation [in/sec] ADS80422",
   "Wind direction [deg] ADS80422", "Wind speed [mph] ADS80422", "Lat [deg] GP635T",

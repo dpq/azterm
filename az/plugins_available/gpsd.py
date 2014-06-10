@@ -1,8 +1,6 @@
 #!/usr/bin/python
 from gps import *
-import os
-import threading
-import terminal_pb2
+import threading, os, az.proto.terminal_pb2 as proto
 
 def touch(fname, times=None):
   fhandle = file(fname, 'a')
@@ -61,7 +59,7 @@ def dev_data():
         yield res
 
 def dev_pack(dp, res):
-  dp.pos.sys = terminal_pb2.DataPoint.PositionSensor.GPS
+  dp.pos.sys = proto.DataPoint.PositionSensor.GPS
   dp.pos.lat, dp.pos.lon, dp.pos.alt = res.get(u"lat", -9999), res.get(u"lon", -9999), res.get(u"alt", -9999)
   dp.pos.speed, dp.pos.track, dp.pos.climb = res.get(u"speed", -9999), res.get(u"track", -9999), res.get(u"climb", -9999)
   dp.pos.epx, dp.pos.epy, dp.pos.epv = res.get(u"epx", -9999), res.get(u"epy", -9999), res.get(u"epv", -9999)
