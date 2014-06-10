@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import az.proto.terminal_pb2 as proto
-import az.plugins_available as plugs
+import az.plugins_enabled as plugs
 import os, traceback, hashlib, socket, struct, ssl, pkgutil
 from time import sleep, time
 from datetime import datetime
