@@ -13,30 +13,30 @@ def send_network(server, string):
     s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     ssl_sock=ssl.wrap_socket(s, ca_certs="/home/pi/gv.crt", cert_reqs=ssl.CERT_REQUIRED)
   except socket.error, msg:
-    print datetime.utcnow(), 'Cannot create socket. Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1]
+    print datetime.utcnow(), msg
     print traceback.format_exc()
     return False
 
   try:
     remote_ip=socket.gethostbyname(server)
   except socket.gaierror, msg:
-    print datetime.utcnow(), 'Cannot resolve server hostname. Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1]
+    print datetime.utcnow(), msg
     print traceback.format_exc()
     return False
 
   try:
-    ssl_sock.connect((remote_ip, port))    
+    ssl_sock.connect((remote_ip, p.port))    
     hash=hashlib.sha1(string)
     msglen=len(string)
     ssl_sock.sendall(struct.pack("i",msglen) + hash.digest() + string)
     ssl_sock.close()
     return True
   except socket.error, msg:
-    print datetime.utcnow(), 'Cannot transmit data, socket error. Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1]
+    print datetime.utcnow(), msg
     print traceback.format_exc()
     return False
-  except:
-    print datetime.utcnow(), 'Cannot transmit data, unknown error.Error code: ' + str(msg[0]) + ' , Error message : ' + msg[1]
+  except Exception, msg:
+    print datetime.utcnow(), msg
     print traceback.format_exc()
     return False
 
@@ -52,24 +52,24 @@ def saveToFile(string):
     f=open(p.storage, "a+b")
     f.write(string)
     f.close()
-  except:
-    print datetime.utcnow(), "Cannot open local storage file for writing"
+  except Exception, msg:
+    print datetime.utcnow(), msg
     print traceback.format_exc()
 
 def loadFromFile():
   try:
     with open(p.storage, "rb") as f:
       return f.read()
-  except:
-    print datetime.utcnow(), "Cannot open local storage file for reading"
+  except Exception, msg:
+    print datetime.utcnow(), msg
     print traceback.format_exc()
 
 def truncFile():
   try:
     open(p.storage, 'w').close()
     return True
-  except:
-    print datetime.utcnow(), "Cannot open local storage file for truncating"
+  except Exception, msg:
+    print datetime.utcnow(), msg
     print traceback.format_exc()
     return False
 
@@ -123,16 +123,16 @@ if __name__=="__main__":
       srv=p.servers[currentServer]
       ks=k.SerializeToString()
 
-      batchUploadOK=send_network(srv, ks)
-      if not batchUploadOK:
+      uploadOK=send_network(srv, ks)
+      if not uploadOK:
         saveToFile(ks)
       elif truncateOK:
-        backlogUploadOK=send_network(srv, loadFromFile())
+        uploadOK=send_network(srv, loadFromFile())
 
-      if backlogUploadOK or not truncateOK:
+      if uploadOK or not truncateOK:
         truncateOK=truncFile()
 
-      if not batchUploadOK:
+      if not uploadOK:
         currentAttempt+=1
         if currentAttempt==p.retryAttempts:
           currentServer+=1
