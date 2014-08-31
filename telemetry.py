@@ -30,7 +30,6 @@ def send_network(server, string):
     msglen=len(string)
     ssl_sock.sendall(struct.pack("i",msglen) + hash.digest() + string)
     ssl_sock.close()
-    return True
   except socket.error, msg:
     print datetime.utcnow(), msg
     print traceback.format_exc()
@@ -39,6 +38,8 @@ def send_network(server, string):
     print datetime.utcnow(), msg
     print traceback.format_exc()
     return False
+
+  return True
 
 def touch(fname, times=None):
   fhandle=file(fname, 'a')
@@ -50,6 +51,15 @@ def touch(fname, times=None):
 def saveToFile(string):
   try:
     f=open(p.storage, "a+b")
+    f.write(string)
+    f.close()
+  except Exception, msg:
+    print datetime.utcnow(), msg
+    print traceback.format_exc()
+
+def saveToFile2(string):
+  try:
+    f=open(p.permastorage, "a+b")
     f.write(string)
     f.close()
   except Exception, msg:
@@ -100,46 +110,61 @@ if __name__=="__main__":
 
   currentServer, currentAttempt, currentMultiplier=0, 0, 1  
   pending_batch, pending_interval=0, 0
+  currentCountDown = 0
 
   isBatchMode=True  # as opposed to isIntervalMode
-  truncateOK=True
-
   k=proto.DataPack()
   while True:
-    dp=k.point.add()
-    dp.unitid=p.unitID
-    dp.timestamp=int(time())
-    dp.type=proto.DataPoint.STATION
-
-    for m in pf:
-      m[0].dev_pack(dp,m[1].next())
 
     if isBatchMode:
+      dp=k.point.add()
+      dp.unitid=p.unitID
+      dp.timestamp=int(time())
+      dp.type=proto.DataPoint.STATION
+      for m in pf:
+        m[0].dev_pack(dp,m[1].next())
       pending_batch+=1
     else:
       pending_interval+=1
+
+
+    if currentCountDown > 0:
+      currentCountDown -= 1
+      if pending_interval==p.intervalSize:
+        pending_interval=0
+        isBatchMode=True
+      if pending_batch==p.batchSize:
+        pending_batch=0
+        isBatchMode=False
+      sleep(1)
+      continue
 
     if pending_batch==p.batchSize:
       srv=p.servers[currentServer]
       ks=k.SerializeToString()
 
-      uploadOK=send_network(srv, ks)
-      if not uploadOK:
+
+      saveToFile2(ks)
+
+      uploadBatchOK=send_network(srv, ks)
+
+      if not uploadBatchOK:
         saveToFile(ks)
-      elif truncateOK:
-        uploadOK=send_network(srv, loadFromFile())
+      else:
+        ks = loadFromFile()
+        if ks and len(ks) > 0:
+          uploadBacklogOK=send_network(srv, ks)
+          if uploadBacklogOK:
+            truncFile()
 
-      if uploadOK or not truncateOK:
-        truncateOK=truncFile()
-
-      if not uploadOK:
+      if not uploadBatchOK:
         currentAttempt+=1
         if currentAttempt==p.retryAttempts:
           currentServer+=1
           currentServer%=len(p.servers)
           currentAttempt, currentMultiplier=0, 1
         print 'Error connecting to %s. Sleeping for %d seconds' % (srv, currentMultiplier)
-        sleep(currentMultiplier)
+        currentCountDown = currentMultiplier
         currentMultiplier*=p.retryMultiplier
       else:
         currentAttempt, currentMultiplier=0, 1

@@ -1,12 +1,14 @@
 #!/usr/bin/python
 import threading, time, cPickle, serial
+import traceback
+from datetime import datetime
 
 class ArduinoPoller(threading.Thread):
   def __init__(self):
     super(ArduinoPoller, self).__init__()
     self.current_value = {}
     self._stop = threading.Event()
-    self.ser = serial.Serial("/dev/arduino", timeout=5)
+    self.ser = serial.Serial("/dev/arduino", timeout=5, baudrate=9600)
 
   def get_current_value(self):
     return self.current_value
@@ -19,22 +21,26 @@ class ArduinoPoller(threading.Thread):
     return self._stop.isSet()
 
   def run(self):
-    try:
-      isInit = False
-      while True:
+    isInit = False
+    while True:
+      try:
         if self.stopped():
           print 'stopped'
           break
+
         line = []
+        end = False
         while True:
           c=self.ser.read(1)
-          if c== '\r':
+          if len(c)==0:
+            continue
+          elif c == '\r':
             end = True
           elif c == '\n' and end==True:
             break
           else:
-            line.append(c)
             end = False
+            line.append(c)
 
         l =''.join(line)
         if l.find("INIT") > -1:
@@ -50,9 +56,14 @@ class ArduinoPoller(threading.Thread):
           self.current_value[d[0]] = float(d[1])
         time.sleep(2.0) # TODO tune.
         cPickle.dump(self.current_value, open("/tmp/azino","wb"))
-    except StopIteration:
-      pass
-
+      except StopIteration:
+        pass
+      except:
+        f = open("/home/pi/log-arduino.txt", "a")
+        f.write(str(datetime.utcnow()) + "\n")
+        f.write(traceback.format_exc())
+        f.close()
+        continue
 
 def dev_init():
   global ap
