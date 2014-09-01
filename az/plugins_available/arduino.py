@@ -53,7 +53,10 @@ class ArduinoPoller(threading.Thread):
           if d.find(":") == -1:
             continue
           d = d.split(":")
-          self.current_value[d[0]] = float(d[1])
+          try:
+            self.current_value[d[0]] = float(d[1])
+          except:
+            self.current_value[d[0]] = -9999
         time.sleep(2.0) # TODO tune.
         cPickle.dump(self.current_value, open("/tmp/azino","wb"))
       except StopIteration:
