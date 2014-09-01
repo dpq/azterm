@@ -113,11 +113,11 @@ if __name__=="__main__":
   currentCountDown = 0
 
   isBatchMode=True  # as opposed to isIntervalMode
-  k=proto.DataPack()
+  #k=proto.DataPack()
   while True:
 
     if isBatchMode:
-      dp=k.point.add()
+      dp=proto.DataPoint() #k.point.add()
       dp.unitid=p.unitID
       dp.timestamp=int(time())
       dp.type=proto.DataPoint.STATION
@@ -141,8 +141,7 @@ if __name__=="__main__":
 
     if pending_batch==p.batchSize:
       srv=p.servers[currentServer]
-      ks=k.SerializeToString()
-
+      ks=dp.SerializeToString()
 
       saveToFile2(ks)
 
@@ -168,7 +167,7 @@ if __name__=="__main__":
         currentMultiplier*=p.retryMultiplier
       else:
         currentAttempt, currentMultiplier=0, 1
-      k=proto.DataPack()
+      #k=proto.DataPack()
       pending_batch=0
       isBatchMode=False
     
