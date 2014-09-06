@@ -49,7 +49,7 @@ class ArduinoPoller(threading.Thread):
         if not isInit:
           continue
         line = []
-        for d in l.split(";"):
+        for d in l.split(";")[1:]:
           if d.find(":") == -1:
             continue
           d = d.split(":")

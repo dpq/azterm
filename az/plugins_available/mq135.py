@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import threading, time, cPickle
-names = ["Noxious gas [ppm] FC-22-I"]
+names = ["Noxious gas [ppm] MQ135"]
 
 def dev_init():
   pass
@@ -22,8 +22,8 @@ def dev_data():
 def dev_pack(dp, res):
   g=dp.gas.add()
   for val in names:
-    if val.lower().find('fc-22-i') != -1:
-      g.name = "FC-22-I"
+    if val.lower().find('mq135') != -1:
+      g.name = "MQ135"
       g.ppm = int(res.get(val, -9999))
 
 if __name__=="__main__":

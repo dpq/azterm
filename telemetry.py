@@ -1,17 +1,19 @@
 #!/usr/bin/python
 import az.proto.terminal_pb2 as proto
 import az.plugins_enabled as plugs
-import os, traceback, hashlib, socket, struct, ssl, pkgutil
+import os, traceback, hashlib, socket, struct, pkgutil
 from time import sleep, time
 from datetime import datetime
 from simplejson import loads
+import gnupg
 
-def send_network(server, string):
+gpg = gnupg.GPG(gnupghome='/home/pi')
+
+def sendNetwork(server, string):
   if string is None or len(string)==0:
     return True
   try:
     s=socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    ssl_sock=ssl.wrap_socket(s, ca_certs="/home/pi/gv.crt", cert_reqs=ssl.CERT_REQUIRED)
   except socket.error, msg:
     print datetime.utcnow(), msg
     print traceback.format_exc()
@@ -25,11 +27,9 @@ def send_network(server, string):
     return False
 
   try:
-    ssl_sock.connect((remote_ip, p.port))    
-    hash=hashlib.sha1(string)
-    msglen=len(string)
-    ssl_sock.sendall(struct.pack("i",msglen) + hash.digest() + string)
-    ssl_sock.close()
+    s.connect((remote_ip, p.port))    
+    s.sendall(struct.pack("q",len(string)) + string)
+    s.close()
   except socket.error, msg:
     print datetime.utcnow(), msg
     print traceback.format_exc()
@@ -41,14 +41,7 @@ def send_network(server, string):
 
   return True
 
-def touch(fname, times=None):
-  fhandle=file(fname, 'a')
-  try:
-    os.utime(fname, times)
-  finally:
-    fhandle.close()
-
-def saveToFile(string):
+def saveLocalStore(string):
   try:
     f=open(p.storage, "a+b")
     f.write(string)
@@ -57,7 +50,7 @@ def saveToFile(string):
     print datetime.utcnow(), msg
     print traceback.format_exc()
 
-def saveToFile2(string):
+def savePermaStore(string):
   try:
     f=open(p.permastorage, "a+b")
     f.write(string)
@@ -66,7 +59,7 @@ def saveToFile2(string):
     print datetime.utcnow(), msg
     print traceback.format_exc()
 
-def loadFromFile():
+def loadLocalStore():
   try:
     with open(p.storage, "rb") as f:
       return f.read()
@@ -74,7 +67,7 @@ def loadFromFile():
     print datetime.utcnow(), msg
     print traceback.format_exc()
 
-def truncFile():
+def truncLocalStore():
   try:
     open(p.storage, 'w').close()
     return True
@@ -113,11 +106,10 @@ if __name__=="__main__":
   currentCountDown = 0
 
   isBatchMode=True  # as opposed to isIntervalMode
-  #k=proto.DataPack()
   while True:
 
     if isBatchMode:
-      dp=proto.DataPoint() #k.point.add()
+      dp=proto.DataPoint()
       dp.unitid=p.unitID
       dp.timestamp=int(time())
       dp.type=proto.DataPoint.STATION
@@ -142,19 +134,19 @@ if __name__=="__main__":
     if pending_batch==p.batchSize:
       srv=p.servers[currentServer]
       ks=dp.SerializeToString()
+      ks=gpg.encrypt(ks, ['dp@dp.io'], always_trust=True, armor=False)
 
-      saveToFile2(ks)
-
-      uploadBatchOK=send_network(srv, ks)
+      savePermaStore(ks)
+      uploadBatchOK=sendNetwork(srv, ks)
 
       if not uploadBatchOK:
-        saveToFile(ks)
+        saveLocalStore(ks)
       else:
-        ks = loadFromFile()
+        ks = loadLocalStore()
         if ks and len(ks) > 0:
-          uploadBacklogOK=send_network(srv, ks)
+          uploadBacklogOK=sendNetwork(srv, ks)
           if uploadBacklogOK:
-            truncFile()
+            truncLocalStore()
 
       if not uploadBatchOK:
         currentAttempt+=1
@@ -167,7 +159,6 @@ if __name__=="__main__":
         currentMultiplier*=p.retryMultiplier
       else:
         currentAttempt, currentMultiplier=0, 1
-      #k=proto.DataPack()
       pending_batch=0
       isBatchMode=False
     
