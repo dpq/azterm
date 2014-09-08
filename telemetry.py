@@ -52,7 +52,7 @@ def saveLocalStore(string):
 
 def savePermaStore(string):
   try:
-    f=open(p.permastorage, "a+b")
+    f=open(p.permastore, "a+b")
     f.write(string)
     f.close()
   except Exception, msg:
@@ -60,6 +60,8 @@ def savePermaStore(string):
     print traceback.format_exc()
 
 def loadLocalStore():
+  if not os.path.isfile(p.storage):
+    open(p.storage, 'a').close()
   try:
     with open(p.storage, "rb") as f:
       return f.read()
@@ -134,7 +136,7 @@ if __name__=="__main__":
     if pending_batch==p.batchSize:
       srv=p.servers[currentServer]
       ks=dp.SerializeToString()
-      ks=gpg.encrypt(ks, ['dp@dp.io'], always_trust=True, armor=False)
+      ks=gpg.encrypt(ks, ['dp@dp.io'], always_trust=True, armor=False).data
 
       savePermaStore(ks)
       uploadBatchOK=sendNetwork(srv, ks)
