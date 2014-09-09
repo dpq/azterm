@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import threading, time, cPickle
-names = ["Temperature [C*] MPL115A2", "Pressure [Pa] MPL115A2"]
+names = ["Temperature [C*] MPL115A2", "Pressure [kPa] MPL115A2"]
 
 def dev_init():
   pass
