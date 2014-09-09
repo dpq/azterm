@@ -1,6 +1,6 @@
 #!/usr/bin/python
 import threading, time, cPickle
-names = ["UV index UVM-30A"]
+names = ["UV index UVM30A"]
 
 def dev_init():
   pass

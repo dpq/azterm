@@ -6,5 +6,5 @@ setup(
     version = "0.1",
     packages = ['az', 'az.proto', 'az.plugins_available', 'az.plugins_enabled'],
     scripts = ['telemetry.py'],
-    install_requires = ['simplejson', 'gnupg', 'protobuf'],
+    install_requires = ['simplejson', 'gnupg', 'protobuf', 'serial'],
 )

@@ -29,14 +29,11 @@ class ArduinoPoller(threading.Thread):
           break
 
         line = []
-        end = False
         while True:
           c=self.ser.read(1)
           if len(c)==0:
             continue
-          elif c == '\r':
-            end = True
-          elif c == '\n' and end==True:
+          if c == '\n':
             break
           else:
             end = False
