@@ -103,9 +103,8 @@ if __name__=="__main__":
   for m in pf:
     m[0].dev_init()
 
-  currentServer, currentAttempt, currentMultiplier=0, 0, 1  
+  currentServer, currentAttempt, currentMultiplier, currentCountDown = 0, 0, 1, 0
   pending_batch, pending_interval=0, 0
-  currentCountDown = 0
 
   isBatchMode=True  # as opposed to isIntervalMode
   while True:
@@ -124,12 +123,12 @@ if __name__=="__main__":
 
     if currentCountDown > 0:
       currentCountDown -= 1
-      if pending_interval==p.intervalSize:
-        pending_interval=0
-        isBatchMode=True
       if pending_batch==p.batchSize:
         pending_batch=0
         isBatchMode=False
+      if pending_interval==p.intervalSize:
+        pending_interval=0
+        isBatchMode=True
       sleep(1)
       continue
 
