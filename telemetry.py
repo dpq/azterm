@@ -7,7 +7,7 @@ from datetime import datetime
 from simplejson import loads
 import gnupg
 
-gpg = gnupg.GPG(gnupghome='/home/pi')
+gpg = gnupg.GPG(gnupghome='/home/pi/.gnupg')
 
 def sendNetwork(server, string):
   if string is None or len(string)==0:
